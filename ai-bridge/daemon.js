@@ -520,6 +520,13 @@ async function processRequest(request) {
   // Periodically verify the Java parent is still alive. When IDEA crashes or is
   // force-killed, stdin may not close cleanly, leaving orphan daemon processes.
   // On Unix, process.ppid changes to 1 (init/launchd) when the parent dies.
+  //
+  // L11 fix: poll every 3s instead of 10s. The previous 10s window meant orphan
+  // daemons could linger for up to 10s after a hard IDE crash before noticing
+  // their parent was gone. 3s tightens the worst-case orphan duration. The
+  // check itself is a cheap kill(pid, 0) syscall + a comparison, so the
+  // increased polling rate is negligible overhead.
+  const PPID_CHECK_INTERVAL_MS = 3000;
   const initialPpid = process.ppid;
   const ppidMonitor = setInterval(() => {
     const currentPpid = process.ppid;
@@ -549,7 +556,7 @@ async function processRequest(request) {
       isDaemonMode = false;
       _originalExit(0);
     }
-  }, 10000);
+  }, PPID_CHECK_INTERVAL_MS);
   ppidMonitor.unref();
 
   // --- Keep alive ---
