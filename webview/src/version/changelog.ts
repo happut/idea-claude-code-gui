@@ -13,6 +13,42 @@ export interface ChangelogEntry {
 
 export const CHANGELOG_DATA: ChangelogEntry[] = [
   {
+    version: '0.4.4',
+    date: '2026-05-23',
+    content: {
+      en: `✨ Features
+- Add Node Process Manager panel under the chat settings menu (below "Switch Current Provider"). Lists every Node.js child process for the current project grouped into Daemon / Active Channels / Orphan, with per-row Kill, Restart and Interrupt actions
+- Add orphan process scanner that detects \`daemon.js\` / \`channel-manager.js\` processes the plugin failed to clean up — surfaces them with a red warning so users can manually terminate the leaked processes
+- Add a live process count badge to the settings menu: shows the active Node process total, turns red with a ⚠ when orphans are detected
+- Add one-click "Clean up all orphans" button to recover from process leak accumulation
+- Add 10-language localization for the panel (zh, zh-TW, en, ja, ko, es, fr, pt-BR, ru, hi)
+
+🐛 Fixes
+- Fix Claude daemon process leak when switching the tab provider from Claude to Codex: previously the daemon stayed alive for the rest of the tab's lifetime even after the user moved away from Claude. \`ModelProviderHandler\` now shuts down the lingering daemon on Claude → non-Claude transitions; the daemon lazily restarts on the next Claude message if the user switches back
+- Fix orphan process scanner falsely identifying daemons belonging to OTHER IDE instances as orphans. When running CC GUI in both IDEA and PyCharm side-by-side, each instance previously listed the other's daemons in its panel — "Kill all orphans" would have terminated live work in the foreign IDE. Each JVM now only attributes processes whose parent PID matches its own
+
+🔧 Improvements
+- Expose \`ProcessManager.getActiveChannelSnapshot()\`, \`BaseSDKBridge.getProcessManager()\`, \`ClaudeSDKBridge.getCurrentDaemonBridgeForInspection()\`, \`DaemonBridge.getDaemonProcessForInspection()\` for read-only process inspection
+- Add project-scoped \`NodeProcessRegistry\` service aggregating across all chat windows (including detached) for unified process management
+- Replace daemon process label hard-coded as "claude" with the tab's current provider (claude/codex), so the panel matches what users see in the chat tab`,
+      zh: `✨ 新功能
+- 在聊天设置菜单中（"切换当前供应商"下方）新增「Node 进程管理」面板，集中展示本项目所有 Node.js 子进程。按守护进程 / 进行中对话 / 孤立进程三类分组显示，每个进程支持终止 / 重启 / 中断操作
+- 新增孤立进程扫描器：自动检测插件未能正确清理的 \`daemon.js\` / \`channel-manager.js\` 进程，以红色警告醒目展示，方便用户手动终止失控的 Node 进程
+- 新增进程数量徽章：菜单中实时显示当前 Node 进程总数，检测到孤立进程时变红色 ⚠ 提醒
+- 一键"清理所有孤立进程"按钮：彻底解决用户长时间使用后 Node 进程堆积的问题
+- 进程管理面板支持 10 种语言（中简、中繁、英、日、韩、西、法、葡、俄、印地）
+
+🐛 修复
+- 修复 Tab 从 Claude 切换到 Codex 后 Claude daemon 不关闭导致进程泄漏的问题：之前用户在 Tab 切换 provider 类型到 Codex 后，原 Claude daemon 会一直存活到 Tab 关闭。现在 \`ModelProviderHandler\` 会在 Claude → 非 Claude 切换时主动关闭 daemon；用户切回 Claude 时下条消息会自动重新启动新 daemon
+- 修复多 IDE 实例下孤立进程误判的问题：之前同时打开 IDEA + PyCharm 跑 CC GUI 时，两个实例会把对方的 daemon 当成自己的孤立进程显示，「清理所有孤立进程」会误杀另一个 IDE 正在运行的对话。现在每个 JVM 实例只认领 parent PID 是自己的真正孤立进程
+
+🔧 改进
+- 暴露 \`ProcessManager.getActiveChannelSnapshot()\`、\`BaseSDKBridge.getProcessManager()\`、\`ClaudeSDKBridge.getCurrentDaemonBridgeForInspection()\`、\`DaemonBridge.getDaemonProcessForInspection()\` 用于只读进程检视
+- 新增项目级 \`NodeProcessRegistry\` 服务，跨所有聊天窗口（含游离窗口）聚合进程数据
+- 进程面板的 daemon 标签从硬编码 "claude" 改为读取 Tab 当前 provider（claude/codex），与用户在聊天 Tab 看到的供应商完全一致`,
+    },
+  },
+  {
     version: '0.4.3',
     date: '2026-05-22',
     content: {

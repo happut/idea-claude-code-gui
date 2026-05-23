@@ -1,3 +1,31 @@
+##### **2026年5月23日（v0.4.4）**
+
+English:
+
+✨ Features
+- Add Node Process Manager panel in the chat settings menu (under "Switch Current Provider"). Shows all Node.js child processes for the current project grouped into three sections — Daemon, Active Channels, and Orphan — with PID, uptime, memory, and per-process Kill/Restart/Interrupt actions. Includes a one-click "Clean up all orphans" button to recover from process leaks
+- Add orphan process scanner that detects Node processes matching `daemon.js` / `channel-manager.js` in the OS process list but not in any of our registries. These are surfaced in the new panel with a red warning highlight so users can manually terminate processes the plugin failed to clean up
+- Add live process count badge to the settings menu: shows the total active Node process count, switches to red with a ⚠ when orphan processes are detected
+- Add 10-language localization for the Node Process Manager (zh, zh-TW, en, ja, ko, es, fr, pt-BR, ru, hi)
+
+🐛 Fixes
+- Fix Claude daemon process leak when switching the tab provider from Claude to Codex: previously the daemon stayed alive for the rest of the tab's lifetime even after the user moved away from Claude. ModelProviderHandler now shuts down the lingering daemon on Claude → non-Claude transitions; the daemon is lazily restarted on the next Claude message if the user switches back
+- Fix orphan process scanner falsely identifying daemons belonging to OTHER IDE instances as orphans. When running CC GUI in both IDEA and PyCharm side-by-side, each instance previously listed the other's daemons in its panel — "Kill all orphans" would have terminated live work in the foreign IDE. The scanner now checks `ProcessHandle.parent()` and only attributes a process to this JVM when its parent PID matches `ProcessHandle.current().pid()`
+
+Chinese:
+
+✨ 新功能
+- 在聊天设置菜单中（"切换当前供应商"下方）新增「Node 进程管理」面板，集中展示本项目所有 Node.js 子进程，按守护进程 / 进行中对话 / 孤立进程三类分组，每个进程显示 PID、运行时长、内存占用，并提供终止 / 重启 / 中断按钮。底部一键"清理所有孤立进程"按钮，专治进程泄漏积累
+- 新增孤立进程扫描器：用 `ProcessHandle.allProcesses()` 扫描系统级 Node 进程，找出含 `daemon.js` / `channel-manager.js` 但不在我们注册表中的进程，在面板中以红色警告高亮显示，让用户能手动终止插件未能正确清理的失控进程
+- 设置菜单实时显示进程总数徽章：正常时灰色显示总数，检测到孤立进程时变为红色 ⚠ 警告
+- Node 进程管理面板支持 10 种语言（中简、中繁、英、日、韩、西、法、葡、俄、印地）
+
+🐛 修复
+- 修复 Tab 从 Claude 切换到 Codex 后 Claude daemon 不关闭导致进程泄漏的问题：之前用户在 Tab 切换 provider 类型到 Codex 后，原 Claude daemon 会一直存活到 Tab 关闭。现在 ModelProviderHandler 会在 Claude → 非 Claude 切换时主动关闭 daemon；用户切回 Claude 时下条消息会自动重新启动新 daemon
+- 修复多 IDE 实例下孤立进程误判的问题：之前同时打开 IDEA + PyCharm 跑 CC GUI 时，两个实例会把对方的 daemon 当成自己的孤立进程显示，「清理所有孤立进程」会误杀另一个 IDE 正在运行的对话。现在通过 `ProcessHandle.parent()` 比对当前 JVM PID，每个实例只认领自己 fork 出来的真正孤立进程
+
+---
+
 ##### **2026年5月22日（v0.4.3）**
 
 English:

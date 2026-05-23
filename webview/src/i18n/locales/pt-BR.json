@@ -972,6 +972,44 @@
       "empty": "Nenhum provedor disponível",
       "switched": "Alternado para {{provider}}"
     },
+    "nodeProcesses": {
+      "title": "Gerenciador de processos Node",
+      "badge": "{{total}} processos",
+      "badgeWithOrphan": "{{total}} · {{orphan}} órfão ⚠",
+      "summary": "Total: {{total}} · Órfãos: {{orphan}}",
+      "loading": "Carregando processos...",
+      "empty": "Nenhum processo Node ativo",
+      "refresh": "Atualizar",
+      "groups": {
+        "daemon": "Processos daemon",
+        "channel": "Conversas em andamento",
+        "orphan": "Processos órfãos"
+      },
+      "kind": {
+        "daemonShort": "Daemon",
+        "channelShort": "Canal",
+        "orphanShort": "Órfão"
+      },
+      "kill": "Encerrar",
+      "interrupt": "Interromper",
+      "restart": "Reiniciar",
+      "pending": "Processando...",
+      "killAll": "Limpar órfãos ({{count}})",
+      "killHint": "Forçar a finalização deste processo Node",
+      "killAllHint": "Encerrar todos os processos órfãos detectados",
+      "restartHint": "Para o daemon; a próxima mensagem iniciará um novo automaticamente",
+      "killConfirmTitle": "Encerrar este processo?",
+      "killConfirm": "Encerrar o processo PID {{pid}}? Conversas em andamento podem ser perdidas.",
+      "restartConfirmTitle": "Reiniciar o daemon?",
+      "restartConfirm": "Reiniciar o daemon? Conversas ativas serão interrompidas.",
+      "killAllConfirmTitle": "Limpar todos os processos órfãos?",
+      "killAllConfirm": "Encerrar todos os {{count}} processos órfãos?",
+      "killSuccess": "Processo encerrado",
+      "killAllSuccess": "{{count}} processo(s) órfão(s) limpos",
+      "restartSuccess": "Daemon parado; uma nova instância iniciará automaticamente na próxima mensagem",
+      "killFailed": "Falha ao encerrar: {{error}}",
+      "activeRequests": "{{count}} em andamento"
+    },
     "link": "Link"
   },
   "markdown": {

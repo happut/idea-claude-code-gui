@@ -110,6 +110,15 @@ public abstract class BaseSDKBridge {
     }
 
     /**
+     * Expose this bridge's ProcessManager for inspection by NodeProcessRegistry.
+     * Callers must treat the returned manager as read-only — do not register/unregister
+     * processes through this reference; use the bridge's normal API instead.
+     */
+    public ProcessManager getProcessManager() {
+        return processManager;
+    }
+
+    /**
      * Get the session ID for this bridge instance.
      * @return Session ID
      */

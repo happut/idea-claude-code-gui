@@ -96,6 +96,15 @@ public class ClaudeSDKBridge extends BaseSDKBridge {
         daemonCoordinator.shutdownDaemon();
     }
 
+    /**
+     * Returns the currently active daemon bridge (or null if no daemon is running).
+     * Read-only access for the Node process management panel — do not start/stop
+     * via this reference; use shutdownDaemon() or sendCommand() through the bridge instead.
+     */
+    public DaemonBridge getCurrentDaemonBridgeForInspection() {
+        return daemonCoordinator.getCurrentDaemonBridge();
+    }
+
     public void prewarmDaemonAsync(String cwd) {
         prewarmDaemonAsync(cwd, null);
     }

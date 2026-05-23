@@ -802,6 +802,44 @@
       "empty": "No hay proveedores disponibles",
       "switched": "Cambiado a {{provider}}"
     },
+    "nodeProcesses": {
+      "title": "Gestor de procesos Node",
+      "badge": "{{total}} procesos",
+      "badgeWithOrphan": "{{total}} · {{orphan}} huérfanos ⚠",
+      "summary": "Total: {{total}} · Huérfanos: {{orphan}}",
+      "loading": "Cargando procesos...",
+      "empty": "No hay procesos Node activos",
+      "refresh": "Actualizar",
+      "groups": {
+        "daemon": "Procesos daemon",
+        "channel": "Conversaciones activas",
+        "orphan": "Procesos huérfanos"
+      },
+      "kind": {
+        "daemonShort": "Daemon",
+        "channelShort": "Canal",
+        "orphanShort": "Huérfano"
+      },
+      "kill": "Terminar",
+      "interrupt": "Detener",
+      "restart": "Reiniciar",
+      "pending": "Procesando...",
+      "killAll": "Limpiar huérfanos ({{count}})",
+      "killHint": "Forzar la terminación de este proceso Node",
+      "killAllHint": "Terminar todos los procesos huérfanos detectados",
+      "restartHint": "Detiene el daemon; el siguiente mensaje generará uno nuevo automáticamente",
+      "killConfirmTitle": "¿Terminar este proceso?",
+      "killConfirm": "¿Terminar el proceso PID {{pid}}? Las conversaciones en curso pueden perderse.",
+      "restartConfirmTitle": "¿Reiniciar el daemon?",
+      "restartConfirm": "¿Reiniciar el daemon? Las conversaciones activas se interrumpirán.",
+      "killAllConfirmTitle": "¿Limpiar todos los procesos huérfanos?",
+      "killAllConfirm": "¿Terminar los {{count}} procesos huérfanos?",
+      "killSuccess": "Proceso terminado",
+      "killAllSuccess": "Se limpiaron {{count}} procesos huérfanos",
+      "restartSuccess": "Daemon detenido; se iniciará automáticamente en el siguiente mensaje",
+      "killFailed": "Error al terminar: {{error}}",
+      "activeRequests": "{{count}} en curso"
+    },
     "link": "Enlace"
   },
   "markdown": {

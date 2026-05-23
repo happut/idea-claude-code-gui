@@ -807,6 +807,44 @@
       "empty": "利用可能なプロバイダーがありません",
       "switched": "{{provider}} に切り替えました"
     },
+    "nodeProcesses": {
+      "title": "Node プロセス管理",
+      "badge": "{{total}} 個のプロセス",
+      "badgeWithOrphan": "{{total}} 個 · 孤児 {{orphan}} ⚠",
+      "summary": "合計: {{total}} · 孤児: {{orphan}}",
+      "loading": "プロセスを読み込み中...",
+      "empty": "アクティブな Node プロセスはありません",
+      "refresh": "更新",
+      "groups": {
+        "daemon": "デーモンプロセス",
+        "channel": "進行中の会話",
+        "orphan": "孤児プロセス"
+      },
+      "kind": {
+        "daemonShort": "Daemon",
+        "channelShort": "会話",
+        "orphanShort": "孤児"
+      },
+      "kill": "終了",
+      "interrupt": "中断",
+      "restart": "再起動",
+      "pending": "処理中...",
+      "killAll": "孤児を全てクリーンアップ ({{count}})",
+      "killHint": "この Node プロセスを強制終了",
+      "killAllHint": "検出された孤児プロセスを全て終了",
+      "restartHint": "デーモンを停止。次のメッセージで自動的に新しいデーモンが起動します",
+      "killConfirmTitle": "このプロセスを終了しますか？",
+      "killConfirm": "PID {{pid}} を終了しますか？進行中の会話は失われる可能性があります。",
+      "restartConfirmTitle": "デーモンを再起動しますか？",
+      "restartConfirm": "デーモンを再起動しますか？進行中の会話は中断されます。",
+      "killAllConfirmTitle": "孤児プロセスを全てクリーンアップしますか？",
+      "killAllConfirm": "孤児プロセス {{count}} 件すべてを終了しますか？",
+      "killSuccess": "プロセスを終了しました",
+      "killAllSuccess": "{{count}} 件の孤児プロセスをクリーンアップしました",
+      "restartSuccess": "デーモンを停止しました。次のメッセージで新しいインスタンスが自動起動します",
+      "killFailed": "終了失敗: {{error}}",
+      "activeRequests": "進行中 {{count}} 件"
+    },
     "link": "リンク"
   },
   "markdown": {

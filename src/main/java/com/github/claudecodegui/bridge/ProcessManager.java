@@ -148,6 +148,22 @@ public class ProcessManager {
     }
 
     /**
+     * Returns an immutable snapshot of the currently registered channel→process map.
+     * Used by NodeProcessRegistry to enumerate live processes for the management panel.
+     * Filters out dead processes inline so callers don't need to re-check isAlive().
+     */
+    public Map<String, Process> getActiveChannelSnapshot() {
+        Map<String, Process> snapshot = new java.util.HashMap<>();
+        for (Map.Entry<String, Process> entry : activeChannelProcesses.entrySet()) {
+            Process process = entry.getValue();
+            if (process != null && process.isAlive()) {
+                snapshot.put(entry.getKey(), process);
+            }
+        }
+        return snapshot;
+    }
+
+    /**
      * Waits for a process to terminate.
      */
     public void waitForProcessTermination(Process process) {

@@ -807,6 +807,44 @@
       "empty": "暫無可用供應商",
       "switched": "已切換到 {{provider}}"
     },
+    "nodeProcesses": {
+      "title": "Node 進程管理",
+      "badge": "{{total}} 個進程",
+      "badgeWithOrphan": "{{total}} 個 · {{orphan}} 孤立 ⚠",
+      "summary": "共 {{total}} 個 · 孤立 {{orphan}} 個",
+      "loading": "正在載入進程資訊...",
+      "empty": "目前沒有作用中的 Node 進程",
+      "refresh": "重新整理",
+      "groups": {
+        "daemon": "常駐進程",
+        "channel": "進行中對話",
+        "orphan": "孤立進程"
+      },
+      "kind": {
+        "daemonShort": "Daemon",
+        "channelShort": "對話",
+        "orphanShort": "孤立"
+      },
+      "kill": "終止",
+      "interrupt": "中斷",
+      "restart": "重啟",
+      "pending": "處理中...",
+      "killAll": "清理所有孤立進程 ({{count}})",
+      "killHint": "強制結束此 Node 進程",
+      "killAllHint": "一鍵清理所有失控的孤立進程",
+      "restartHint": "關閉常駐進程，下一則訊息時會自動重新啟動",
+      "killConfirmTitle": "終止此進程？",
+      "killConfirm": "確認終止 PID {{pid}}？當前對話可能遺失。",
+      "restartConfirmTitle": "重啟常駐進程？",
+      "restartConfirm": "確認重啟常駐進程？正在進行的對話會被中斷。",
+      "killAllConfirmTitle": "清理所有孤立進程？",
+      "killAllConfirm": "確認終止全部 {{count}} 個孤立進程？",
+      "killSuccess": "進程已終止",
+      "killAllSuccess": "已清理 {{count}} 個孤立進程",
+      "restartSuccess": "常駐進程已關閉，下一則訊息會自動啟動新實例",
+      "killFailed": "終止失敗：{{error}}",
+      "activeRequests": "{{count}} 個進行中"
+    },
     "link": "連結"
   },
   "markdown": {
