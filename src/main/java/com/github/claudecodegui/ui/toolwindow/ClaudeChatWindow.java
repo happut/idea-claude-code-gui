@@ -65,7 +65,7 @@ public class ClaudeChatWindow {
     private volatile boolean disposed = false;
     private volatile boolean initialized = false;
     private volatile boolean frontendReady = false;
-    private volatile String pendingCodeSnippet = null;
+    private final PendingCodeSnippetBuffer pendingCodeSnippetBuffer = new PendingCodeSnippetBuffer();
     private volatile boolean slashCommandsFetched = false;
     private final AtomicBoolean restoredHistoryLoadStarted = new AtomicBoolean(false);
 
@@ -430,18 +430,17 @@ public class ClaudeChatWindow {
         if (selectionInfo == null || selectionInfo.isEmpty()) {
             return;
         }
-        if (frontendReady) {
-            addCodeSnippet(selectionInfo);
-        } else {
-            // Defer until frontend signals readiness
-            pendingCodeSnippet = selectionInfo;
+        // offer() returns the snippet to emit now, or null when it was deferred
+        // until the frontend signals readiness (see flushPendingCodeSnippet).
+        String toEmit = pendingCodeSnippetBuffer.offer(selectionInfo, frontendReady);
+        if (toEmit != null) {
+            addCodeSnippet(toEmit);
         }
     }
 
     private void flushPendingCodeSnippet() {
-        if (pendingCodeSnippet != null) {
-            String snippet = pendingCodeSnippet;
-            pendingCodeSnippet = null;
+        String snippet = pendingCodeSnippetBuffer.takePending();
+        if (snippet != null) {
             addCodeSnippet(snippet);
         }
     }
