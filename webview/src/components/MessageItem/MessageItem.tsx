@@ -14,11 +14,12 @@ import {
   BashToolBlock,
   BashToolGroupBlock,
   SearchToolGroupBlock,
+  AgentGroupBlock,
 } from '../toolBlocks';
 import { ContentBlockRenderer } from './ContentBlockRenderer';
 import { formatTime } from '../../utils/helpers';
 import { copyToClipboard } from '../../utils/copyUtils';
-import { READ_TOOL_NAMES, EDIT_TOOL_NAMES, BASH_TOOL_NAMES, SEARCH_TOOL_NAMES, isToolName } from '../../utils/toolConstants';
+import { READ_TOOL_NAMES, EDIT_TOOL_NAMES, BASH_TOOL_NAMES, SEARCH_TOOL_NAMES, AGENT_TOOL_NAMES, isToolName } from '../../utils/toolConstants';
 
 export interface MessageItemProps {
   message: ClaudeMessage;
@@ -51,7 +52,8 @@ type GroupedBlock =
   | { type: 'read_group'; blocks: ClaudeContentBlock[]; startIndex: number }
   | { type: 'edit_group'; blocks: ClaudeContentBlock[]; startIndex: number }
   | { type: 'bash_group'; blocks: ClaudeContentBlock[]; startIndex: number }
-  | { type: 'search_group'; blocks: ClaudeContentBlock[]; startIndex: number };
+  | { type: 'search_group'; blocks: ClaudeContentBlock[]; startIndex: number }
+  | { type: 'agent_group'; agentBlock: ClaudeContentBlock; followingBlocks: ClaudeContentBlock[]; startIndex: number };
 
 /** Shared copy icon SVG used by both user and assistant message copy buttons */
 const CopyIcon = () => (
@@ -158,7 +160,25 @@ function isToolBlockOfType(block: ClaudeContentBlock, toolNames: Set<string>): b
   return block.type === 'tool_use' && isToolName(block.name, toolNames);
 }
 
-function groupBlocks(blocks: ClaudeContentBlock[]): GroupedBlock[] {
+// Tracks how many blocks each agent group absorbed while running.
+// Once the agent completes, this frozen count prevents blocks from being released.
+//
+// NOTE: This module-level Map is shared across all MessageItem instances.
+// It relies on toolUseId uniqueness and the single-instance rendering pattern.
+// For multi-pane / multi-tab scenarios, consider lifting this into a per-session
+// ref or Context to avoid cross-instance contamination.
+// Keys are never evicted; call clearAgentGroupBlockCount() on session switch.
+const agentGroupBlockCount = new Map<string, number>();
+
+export function clearAgentGroupBlockCount(): void {
+  agentGroupBlockCount.clear();
+}
+
+function groupBlocks(
+  blocks: ClaudeContentBlock[],
+  findToolResult: (toolId: string | undefined, messageIndex: number) => ToolResultBlock | null | undefined,
+  messageIndex: number,
+): GroupedBlock[] {
   const groupedBlocks: GroupedBlock[] = [];
   let currentReadGroup: ClaudeContentBlock[] = [];
   let readGroupStartIndex = -1;
@@ -168,6 +188,9 @@ function groupBlocks(blocks: ClaudeContentBlock[]): GroupedBlock[] {
   let bashGroupStartIndex = -1;
   let currentSearchGroup: ClaudeContentBlock[] = [];
   let searchGroupStartIndex = -1;
+  let currentAgentBlock: ClaudeContentBlock | null = null;
+  let agentFollowingText: ClaudeContentBlock[] = [];
+  let agentGroupStartIndex = -1;
 
   const flushReadGroup = () => {
     if (currentReadGroup.length > 0) {
@@ -217,8 +240,71 @@ function groupBlocks(blocks: ClaudeContentBlock[]): GroupedBlock[] {
     }
   };
 
+  const flushAgentGroup = () => {
+    if (currentAgentBlock) {
+      const agentToolId = currentAgentBlock.type === 'tool_use' ? currentAgentBlock.id : undefined;
+      const key = agentToolId ?? `agent-${agentGroupStartIndex}`;
+      // Persist the count so it's stable after completion
+      agentGroupBlockCount.set(key, agentFollowingText.length);
+      groupedBlocks.push({
+        type: 'agent_group',
+        agentBlock: currentAgentBlock,
+        followingBlocks: [...agentFollowingText],
+        startIndex: agentGroupStartIndex,
+      });
+      currentAgentBlock = null;
+      agentFollowingText = [];
+      agentGroupStartIndex = -1;
+    }
+  };
+
   blocks.forEach((block, idx) => {
-    if (isToolBlockOfType(block, READ_TOOL_NAMES)) {
+    if (currentAgentBlock) {
+      if (isToolBlockOfType(block, AGENT_TOOL_NAMES)) {
+        flushAgentGroup();
+        currentAgentBlock = block;
+        agentGroupStartIndex = idx;
+        return;
+      }
+
+      const agentToolId = currentAgentBlock.type === 'tool_use' ? currentAgentBlock.id : undefined;
+      const agentResult = findToolResult(agentToolId, messageIndex);
+      const agentCompleted = agentResult !== undefined && agentResult !== null;
+
+      if (!agentCompleted) {
+        // Still running — absorb all subsequent blocks
+        agentFollowingText.push(block);
+        return;
+      }
+
+      // Completed — use or establish the frozen count to decide boundary
+      const key = agentToolId ?? `agent-${agentGroupStartIndex}`;
+      let frozenCount = agentGroupBlockCount.get(key);
+
+      // FIX: If frozen count doesn't exist, establish it now based on current absorbed blocks
+      if (frozenCount === undefined) {
+        frozenCount = agentFollowingText.length;
+        agentGroupBlockCount.set(key, frozenCount);
+      }
+
+      if (agentFollowingText.length < frozenCount) {
+        // Still within the previously established boundary
+        agentFollowingText.push(block);
+        return;
+      }
+
+      // Beyond boundary — flush and let block be processed normally
+      flushAgentGroup();
+    }
+
+    if (isToolBlockOfType(block, AGENT_TOOL_NAMES)) {
+      flushReadGroup();
+      flushEditGroup();
+      flushBashGroup();
+      flushSearchGroup();
+      currentAgentBlock = block;
+      agentGroupStartIndex = idx;
+    } else if (isToolBlockOfType(block, READ_TOOL_NAMES)) {
       flushEditGroup();
       flushBashGroup();
       flushSearchGroup();
@@ -259,6 +345,7 @@ function groupBlocks(blocks: ClaudeContentBlock[]): GroupedBlock[] {
     }
   });
 
+  flushAgentGroup();
   flushReadGroup();
   flushEditGroup();
   flushBashGroup();
@@ -412,7 +499,7 @@ export const MessageItem = memo(function MessageItem({
     }
   }, [blocks, isMessageStreaming, manuallyExpandedThinking]);
 
-  const groupedBlocks = useMemo(() => groupBlocks(blocks), [blocks]);
+  const groupedBlocks = useMemo(() => groupBlocks(blocks, findToolResult, messageIndex), [blocks, findToolResult, messageIndex]);
 
   // Register user message DOM node for anchor navigation
   // Must be called before any early returns to satisfy React hooks rules
@@ -588,6 +675,23 @@ export const MessageItem = memo(function MessageItem({
         return (
           <div key={`${messageIndex}-searchgroup-${grouped.startIndex}`} className="content-block">
             <SearchToolGroupBlock items={searchItems} />
+          </div>
+        );
+      }
+
+      if (grouped.type === 'agent_group') {
+        const agentToolId = grouped.agentBlock.type === 'tool_use' ? grouped.agentBlock.id : undefined;
+        return (
+          <div key={`agentgroup-${agentToolId ?? grouped.startIndex}`} className="content-block">
+            <AgentGroupBlock
+              agentBlock={grouped.agentBlock}
+              followingBlocks={grouped.followingBlocks}
+              messageIndex={messageIndex}
+              isStreaming={isMessageStreaming}
+              isLastMessage={isLast}
+              isThinking={isThinking}
+              findToolResult={findToolResult}
+            />
           </div>
         );
       }
