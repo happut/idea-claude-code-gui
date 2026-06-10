@@ -428,6 +428,14 @@ function shouldSkipTextNode(textNode: Text): boolean {
 const FILE_URI_SCHEME_REGEX = /^file:/i;
 const WINDOWS_DRIVE_PATH_REGEX = /^[A-Za-z]:[\\/]/;
 
+/**
+ * Percent-decode an href, repeating to collapse double-encoding such as
+ * `%2520` -> `%20` -> ` `. Decoding eagerly is also a safety measure: it
+ * surfaces encoded control characters (e.g. `%09`) so the downstream
+ * `isValidOpenFileTarget` control-char guard in bridge.ts can reject them.
+ * Trade-off: a real filename containing a literal `%20` would be over-decoded,
+ * which is exceedingly rare for navigation targets.
+ */
 function decodeHrefRepeatedly(value: string, maxPasses = 3): string {
   let current = value;
   for (let pass = 0; pass < maxPasses; pass += 1) {

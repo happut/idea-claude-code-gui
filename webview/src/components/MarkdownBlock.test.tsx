@@ -100,6 +100,43 @@ describe('MarkdownBlock linkify integration', () => {
     expect(screen.getByRole('link', { name: 'good' }).getAttribute('href')).toBe('https://example.com/docs');
   });
 
+  it('strips control-character-obfuscated protocols during sanitization', () => {
+    // A literal Tab/newline breaks naive protocol detection, yet browsers strip
+    // those characters from a URL and then execute the underlying scheme. The
+    // sanitizer must reject such hrefs instead of force-keeping them.
+    // Regression guard: `java&#9;script:` previously survived into the DOM.
+    render(
+      <MarkdownBlock
+        content={[
+          '[tabjs](java&#9;script:alert(1))',
+          '',
+          '[newlinejs](java&#10;script:alert(2))',
+          '',
+          '[tabdata](da&#9;ta:text/html,x)',
+          '',
+          '[good](https://example.com/docs)',
+        ].join('\n')}
+      />,
+    );
+
+    expect(screen.queryByRole('link', { name: 'tabjs' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'newlinejs' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'tabdata' })).toBeNull();
+
+    // Defense-in-depth: a legitimate file/URL href never contains C0 control
+    // characters. Their presence means a control-char-obfuscated scheme slipped
+    // through (browsers strip such chars and then execute the underlying scheme).
+    document.querySelectorAll('a[href]').forEach((anchor) => {
+      const href = anchor.getAttribute('href') ?? '';
+      const hasControlChar = href.split('').some((ch) => ch.charCodeAt(0) < 0x20);
+      expect(hasControlChar).toBe(false);
+    });
+
+    expect(screen.getByRole('link', { name: 'good' }).getAttribute('href')).toBe(
+      'https://example.com/docs',
+    );
+  });
+
   it('allows file: markdown links and routes them to openFile', () => {
     render(
       <MarkdownBlock

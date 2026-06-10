@@ -42,9 +42,26 @@ const WINDOWS_DRIVE_PATH_REGEX = /^[A-Za-z]:[\\/]/;
 const URI_SCHEME_REGEX = /^[A-Za-z][A-Za-z0-9+.-]*:/;
 let hrefSanitizerHookInstalled = false;
 
+function containsControlCharacter(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1) {
+    if (value.charCodeAt(index) < 0x20) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function isAllowedHrefValue(value: string): boolean {
   const trimmed = value.trim();
   if (!trimmed) {
+    return false;
+  }
+
+  // Reject hrefs containing C0 control characters (Tab/LF/CR/etc.). They can
+  // split the scheme checks below, yet a browser strips those characters from
+  // the URL and then executes the underlying scheme (e.g. `java<Tab>script:`
+  // resolves to `javascript:`). See MarkdownBlock.test.tsx regression guard.
+  if (containsControlCharacter(trimmed)) {
     return false;
   }
 
