@@ -160,25 +160,11 @@ function isToolBlockOfType(block: ClaudeContentBlock, toolNames: Set<string>): b
   return block.type === 'tool_use' && isToolName(block.name, toolNames);
 }
 
-// Tracks how many blocks each agent group absorbed while running.
-// Once the agent completes, this frozen count prevents blocks from being released.
-//
-// NOTE: This module-level Map is shared across all MessageItem instances.
-// It relies on toolUseId uniqueness and the single-instance rendering pattern.
-// For multi-pane / multi-tab scenarios, consider lifting this into a per-session
-// ref or Context to avoid cross-instance contamination.
-// Keys are never evicted; call clearAgentGroupBlockCount() on session switch.
-const agentGroupBlockCount = new Map<string, number>();
-
-export function clearAgentGroupBlockCount(): void {
-  agentGroupBlockCount.clear();
-}
-
-function groupBlocks(
-  blocks: ClaudeContentBlock[],
-  findToolResult: (toolId: string | undefined, messageIndex: number) => ToolResultBlock | null | undefined,
-  messageIndex: number,
-): GroupedBlock[] {
+// Groups consecutive content blocks for rendering. Agent groups absorb the
+// tool_use blocks that follow them using a purely structural rule (see the
+// forEach below), so live streaming and history reload yield identical groups.
+// Exported for unit testing.
+export function groupBlocks(blocks: ClaudeContentBlock[]): GroupedBlock[] {
   const groupedBlocks: GroupedBlock[] = [];
   let currentReadGroup: ClaudeContentBlock[] = [];
   let readGroupStartIndex = -1;
@@ -242,10 +228,6 @@ function groupBlocks(
 
   const flushAgentGroup = () => {
     if (currentAgentBlock) {
-      const agentToolId = currentAgentBlock.type === 'tool_use' ? currentAgentBlock.id : undefined;
-      const key = agentToolId ?? `agent-${agentGroupStartIndex}`;
-      // Persist the count so it's stable after completion
-      agentGroupBlockCount.set(key, agentFollowingText.length);
       groupedBlocks.push({
         type: 'agent_group',
         agentBlock: currentAgentBlock,
@@ -259,42 +241,24 @@ function groupBlocks(
   };
 
   blocks.forEach((block, idx) => {
+    // While inside an agent group, absorb subsequent tool_use blocks until a
+    // structural boundary: the next agent tool, a non-tool block (text/thinking),
+    // or the end of the message. Keeping this purely structural guarantees that
+    // live streaming and history reload produce identical groups — the previous
+    // streaming-only "frozen count" could not be reconstructed from a snapshot,
+    // so reloaded agent groups dropped all their absorbed children.
     if (currentAgentBlock) {
       if (isToolBlockOfType(block, AGENT_TOOL_NAMES)) {
+        // Next agent tool — close this group and open a new one below.
         flushAgentGroup();
-        currentAgentBlock = block;
-        agentGroupStartIndex = idx;
-        return;
-      }
-
-      const agentToolId = currentAgentBlock.type === 'tool_use' ? currentAgentBlock.id : undefined;
-      const agentResult = findToolResult(agentToolId, messageIndex);
-      const agentCompleted = agentResult !== undefined && agentResult !== null;
-
-      if (!agentCompleted) {
-        // Still running — absorb all subsequent blocks
+      } else if (block.type === 'tool_use') {
+        // Absorb the following tool_use into the running agent group.
         agentFollowingText.push(block);
         return;
+      } else {
+        // Non-tool block (text/thinking/...) ends the group; process it normally.
+        flushAgentGroup();
       }
-
-      // Completed — use or establish the frozen count to decide boundary
-      const key = agentToolId ?? `agent-${agentGroupStartIndex}`;
-      let frozenCount = agentGroupBlockCount.get(key);
-
-      // FIX: If frozen count doesn't exist, establish it now based on current absorbed blocks
-      if (frozenCount === undefined) {
-        frozenCount = agentFollowingText.length;
-        agentGroupBlockCount.set(key, frozenCount);
-      }
-
-      if (agentFollowingText.length < frozenCount) {
-        // Still within the previously established boundary
-        agentFollowingText.push(block);
-        return;
-      }
-
-      // Beyond boundary — flush and let block be processed normally
-      flushAgentGroup();
     }
 
     if (isToolBlockOfType(block, AGENT_TOOL_NAMES)) {
@@ -499,7 +463,7 @@ export const MessageItem = memo(function MessageItem({
     }
   }, [blocks, isMessageStreaming, manuallyExpandedThinking]);
 
-  const groupedBlocks = useMemo(() => groupBlocks(blocks, findToolResult, messageIndex), [blocks, findToolResult, messageIndex]);
+  const groupedBlocks = useMemo(() => groupBlocks(blocks), [blocks]);
 
   // Register user message DOM node for anchor navigation
   // Must be called before any early returns to satisfy React hooks rules

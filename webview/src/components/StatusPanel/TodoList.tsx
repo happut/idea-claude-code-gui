@@ -31,7 +31,7 @@ const TodoList = memo(({ todos }: TodoListProps) => {
               {todo.content}
               {hasBlockedBy && (
                 <span className="status-panel-todo-blocked" title={t('statusPanel.blockedBy', { ids: todo.blockedBy!.join(', ') })}>
-                  {' '}🚫{todo.blockedBy!.map((id) => `#${id}`).join(',')}
+                  {' '}<span className="codicon codicon-circle-slash" />{todo.blockedBy!.map((id) => `#${id}`).join(',')}
                 </span>
               )}
             </div>
