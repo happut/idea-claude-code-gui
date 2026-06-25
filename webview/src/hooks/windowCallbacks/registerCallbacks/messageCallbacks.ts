@@ -148,6 +148,16 @@ export function registerMessageCallbacks(
   window.__cancelPendingUpdateMessages = cancelPendingUpdateMessages;
 
   const processUpdateMessages = (json: string, sequence: number | null = null) => {
+    // Re-check the session-transition guard inside processUpdateMessages so the
+    // rAF-deferred path (window.updateMessages → setTimeout → processUpdateMessages)
+    // cannot resurrect cleared messages when a transition starts between the
+    // entry-point check and the deferred fire. This also catches synchronous
+    // callers that bypass the entry point — addHistoryMessage / addUserMessage
+    // already guard, but processUpdateMessages is the canonical setter and
+    // should be self-defending.
+    if (window.__sessionTransitioning) {
+      return;
+    }
     const minAcceptedSequence = window.__minAcceptedUpdateSequence ?? 0;
     if (sequence != null && sequence < minAcceptedSequence) {
       return;
@@ -408,11 +418,11 @@ export function registerMessageCallbacks(
           window.__pendingUpdateJson = null;
           window.__pendingUpdateSequence = null;
           // A session transition may have begun while this frame was buffered.
-          // processUpdateMessages does not re-check the transition guard, so
-          // enforce it here — otherwise a stale snapshot deferred during the
-          // outgoing session's streaming would run down the non-streaming path
-          // (isStreamingRef was cleared by beginSessionTransition) and resurrect
-          // the cleared messages.
+          // processUpdateMessages re-checks the transition guard itself now, so
+          // this early return is defense-in-depth — without either check, a
+          // stale snapshot deferred during the outgoing session's streaming
+          // would run down the non-streaming path (isStreamingRef was cleared
+          // by beginSessionTransition) and resurrect the cleared messages.
           if (window.__sessionTransitioning) return;
           if (latestJson) {
             processUpdateMessages(latestJson, latestSequence);
