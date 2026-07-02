@@ -173,7 +173,13 @@ final class SlashCommandPathPolicy {
 
             return !realSubPath.equals(realPluginDir);
         } catch (IOException e) {
-            LOG.debug("Cannot resolve real path for plugin path safety check: " + subPath);
+            // toRealPath() can fail on \\wsl.localhost\... UNC paths (the 9P filesystem
+            // service is slow/flaky for canonicalization). Fall back to a normalized-path
+            // containment check: callers resolve subPath via resolvePluginSubPath, which
+            // rejects absolute declared paths, and normalize() collapses any ../ segments
+            // before the startsWith comparison, so directory-traversal escapes are still
+            // rejected.
+            LOG.debug("toRealPath failed; using normalized containment check for: " + subPath);
             Path normSub = subPath.toAbsolutePath().normalize();
             Path normPluginDir = pluginDir.toAbsolutePath().normalize();
             return normSub.startsWith(normPluginDir) && !normSub.equals(normPluginDir);

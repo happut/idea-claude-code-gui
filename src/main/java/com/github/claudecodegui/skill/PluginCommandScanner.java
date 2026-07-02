@@ -300,6 +300,13 @@ final class PluginCommandScanner {
             return null;
         }
 
+        // installed_plugins.json stores Linux paths (e.g. /home/user/.claude/plugins/...).
+        // On a Windows host driving a WSL project, Paths.get("/home/...") resolves against
+        // the current drive (C:\home\...), which does not exist, so every plugin's
+        // skills/commands subdir gets rejected by the toRealPath() safety check. Convert to
+        // the \\wsl.localhost\<distro>\... UNC form so file ops hit the WSL filesystem.
+        // isWslPath() is false on non-Windows hosts, so native Linux/macOS installs are
+        // unaffected.
         if (NodeDetector.isWslPath(installPath)) {
             String unc = NodeDetector.convertWslPathToWindowsUnc(installPath);
             if (unc != null && !unc.isEmpty()) {
